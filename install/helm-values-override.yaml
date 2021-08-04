@@ -1,3 +1,21 @@
+loki:
+  config: |
+    schema_config:
+      configs:
+        - from: 2020-09-07
+          store: boltdb-shipper
+          object_store: aws
+          schema: v11
+          index:
+            prefix: loki_index_
+            period: 24h
+    storage_config:
+      aws:
+        s3: s3://{{ .Values.access_key }}:{{ .Values.secret_access_key }}@{{ .Values.bucketname }}
+      boltdb_shipper:
+        active_index_directory: /var/loki/index
+        shared_store: s3
+        cache_location: /var/loki/cache
 ingester:
   replicas: 2
   podAnnotations:

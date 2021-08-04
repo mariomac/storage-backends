@@ -1,0 +1,34 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: emitter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: emitter
+  template:
+    metadata:
+      labels:
+        name: emitter
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: "app.kubernetes.io/role"
+                    operator: In
+                    values: [ "distributor","querier","query-frontend","ingester" ]
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: emitter
+          image: quay.io/mmaciasl/fake-flow-loki-emitter:latest
+          imagePullPolicy: Always
+          env:
+            - name: LOKI_HOST
+              value: http://loki-loki-distributed-distributor:3100
+
+
+
+
