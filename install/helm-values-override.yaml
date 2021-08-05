@@ -1,21 +1,59 @@
 loki:
   config: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+
+    distributor:
+      ring:
+        kvstore:
+          store: memberlist
+
+    ingester:
+      lifecycler:
+        ring:
+          kvstore:
+            store: memberlist
+          replication_factor: 1
+        final_sleep: 0s
+      chunk_idle_period: 5m
+      chunk_retain_period: 30s
+    memberlist:
+      abort_if_cluster_join_fails: false
+
+      # Expose this port on all distributor, ingester
+      # and querier replicas.
+      bind_port: 7946
+
+      max_join_backoff: 1m
+      max_join_retries: 10
+      min_join_backoff: 1s
+
     schema_config:
       configs:
-        - from: 2020-09-07
+        - from: 2020-05-15
           store: boltdb-shipper
-          object_store: aws
+          object_store: s3
           schema: v11
           index:
-            prefix: loki_index_
+            prefix: index_
             period: 24h
+
     storage_config:
-      aws:
-        s3: s3://{{ .Values.access_key }}:{{ .Values.secret_access_key }}@{{ .Values.bucketname }}
       boltdb_shipper:
-        active_index_directory: /var/loki/index
+        active_index_directory: /loki/index
+        cache_location: /loki/index_cache
         shared_store: s3
-        cache_location: /var/loki/cache
+      aws:
+        s3: s3://us-east-1/{{ .Values.bucketname }}
+        access_key_id: {{ .Values.access_key }}
+        secret_access_key: {{ .Values.secret_access_key }}
+        s3forcepathstyle: true
+    limits_config:
+      enforce_metric_name: false
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
 ingester:
   replicas: 2
   podAnnotations:
@@ -40,6 +78,13 @@ ingester:
               matchLabels:
                 {{- include "loki.ingesterSelectorLabels" . | nindent 12 }}
             topologyKey: failure-domain.beta.kubernetes.io/zone
+  extraVolumes:
+    - name: index
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: index
+      mountPath: /loki/index
+
 distributor:
   podAnnotations:
     bench_role: distributor
@@ -61,3 +106,14 @@ distributor:
             topologyKey: failure-domain.beta.kubernetes.io/zone
 gateway:
   enabled: false
+querier:
+  extraVolumes:
+    - name: index
+      emptyDir: {}
+    - name: indexcache
+      emptyDir: {}
+  extraVolumeMounts:
+    - name: index
+      mountPath: /loki/index
+    - name: indexcache
+      mountPath: /loki/index_cache
