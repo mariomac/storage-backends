@@ -8,19 +8,12 @@ import (
 	"time"
 )
 
-const (
-	samplersBaseAddr = "100.0.0.0"
-	podsBaseAddr     = "172.10.6.0"
-)
-
 type RndGenerator struct {
-	sequence      int32
-	nodeAddresses []string
-	podAddresses  []string
-	numNodes      int
+	sequence     int32
+	podAddresses []string
 }
 
-const flowTemplate = `{"Type":"IPFix","TimeReceived":"%d","SequenceNum":"%d","SamplingRate":"0","SamplerAddress":%q,` +
+const flowTemplate = `{"Type":"IPFix","TimeReceived":"%d","SequenceNum":"%d","SamplingRate":"0","SamplerAddress":"0.0.0.0",` +
 	`"TimeFlowStart":"%d","TimeFlowEnd":"%d","Bytes":"%d","Packets":"%d","SrcAddr":%q,"DstAddr":%q,` +
 	`"Etype":"2048","Proto":"6","SrcPort":"%d","DstPort":"%d",` +
 	`"InIf":"11","OutIf":"65533","SrcMac":"00:00:00:00:00:00","DstMac":"00:00:00:00:00:00",` +
@@ -33,15 +26,13 @@ const flowTemplate = `{"Type":"IPFix","TimeReceived":"%d","SequenceNum":"%d","Sa
 	`"FragmentOffsetEncap":"0","HasMPLS":"false","MPLSCount":"0","MPLS1TTL":"0",` +
 	`"MPLS1Label":"0","MPLS2TTL":"0","MPLS2Label":"0","MPLS3TTL":"0","MPLS3Label":"0",` +
 	`"MPLSLastTTL":"0","MPLSLastLabel":"0","HasPPP":"false","PPPAddressControl":"0",` +
-	`"K8SSrcPodName":%q,"K8SSrcPodNamespace":"namespace","K8SSrcPodNode":%q,` +
-	`"K8SDstPodName":%q,"K8SDstPodNamespace":"namespace","K8SDstPodNode":%q}`
+	`"K8SSrcPodName":%q,"K8SSrcPodNamespace":"namespace","K8SSrcPodNode":"0.0.0.0",` +
+	`"K8SDstPodName":%q,"K8SDstPodNamespace":"namespace","K8SDstPodNode":"0.0.0.0"}`
 
-func NewRndGenerator(numPods, numNodes int) RndGenerator {
+func NewRndGenerator(podsBaseAddr string, numPods int) RndGenerator {
 	return RndGenerator{
-		sequence:      0,
-		numNodes:      numNodes,
-		nodeAddresses: ipRange(samplersBaseAddr, numNodes),
-		podAddresses:  ipRange(podsBaseAddr, numPods),
+		sequence:     0,
+		podAddresses: ipRange(podsBaseAddr, numPods),
 	}
 }
 
@@ -53,11 +44,10 @@ func (g *RndGenerator) Generate() (payload, srcPod, dstPod string) {
 	srcPod = g.podAddresses[srcNum]
 	dstPod = g.podAddresses[dstNum]
 	payload = fmt.Sprintf(
-		flowTemplate, now, g.sequence, g.nodeAddresses[rand.Intn(len(g.nodeAddresses))],
+		flowTemplate, now, g.sequence,
 		now, now, rand.Intn(4095)+1, rand.Intn(63)+1, srcPod, dstPod,
 		rand.Intn(65000)+1, rand.Intn(65000)+1,
-		srcPod, g.nodeAddresses[srcNum%g.numNodes],
-		dstPod, g.nodeAddresses[dstNum%g.numNodes])
+		srcPod, dstPod)
 	return payload, srcPod, dstPod
 }
 

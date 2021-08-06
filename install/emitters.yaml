@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   name: emitter
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       name: emitter
@@ -21,6 +21,12 @@ spec:
                     operator: In
                     values: [ "distributor","querier","ingester" ]
               topologyKey: kubernetes.io/hostname
+            - labelSelector:
+                matchExpressions:
+                  - key: "name"
+                    operator: In
+                    values: [ "emitter" ]
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: emitter
           image: quay.io/mmaciasl/fake-flow-loki-emitter:latest
@@ -28,6 +34,9 @@ spec:
           env:
             - name: LOKI_HOST
               value: http://loki-loki-distributed-distributor:3100
+            - name: HASH_PODS_BASE
+              value: 'true'
+
 
 
 

@@ -23,5 +23,5 @@ CONFIG options
 
 * `LOKI_HOST` (default: `http://localhost:3100`)
 * `PODS` (default: `20`)
-* `NODES` (default: `4`)
+* `HASH_PODS_BASE` whether has to generate a base pods address hashed from the hostname (default: `false`)
 * `FLOWS_PER_SECOND` (default: `2000`)

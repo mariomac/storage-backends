@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"hash/fnv"
 	"log"
 	"os"
 	"strconv"
@@ -14,14 +16,15 @@ import (
 const (
 	defaultFlowsPerSecond = 2000
 	defaultPods           = 20
-	defaultNodes          = 4
 	defaultLoki           = "http://localhost:3100"
+	defaultPodsBaseAddr   = "172.10.6.0"
 	maxPayloadSize        = 1024 * 1024
 )
 
 func main() {
 	cfg := parseConfig()
-	rndGen := flow.NewRndGenerator(cfg.pods, cfg.nodes)
+	log.Printf("%#v", cfg)
+	rndGen := flow.NewRndGenerator(cfg.podsBaseAddr, cfg.pods)
 	accum := flow.NewAccumulator(&rndGen)
 	cl := loki.NewHttpJsonClient(cfg.hostAddress)
 	totalFlows := 0
@@ -51,8 +54,8 @@ func main() {
 
 type config struct {
 	hostAddress    string
+	podsBaseAddr   string
 	pods           int
-	nodes          int
 	flowsPerSecond int
 }
 
@@ -63,20 +66,27 @@ func parseConfig() config {
 	if !ok {
 		cfg.hostAddress = defaultLoki
 	}
+
+	cfg.podsBaseAddr = defaultPodsBaseAddr
+	if hpods, ok := os.LookupEnv("HASH_PODS_BASE"); ok {
+		if hashPods, _ := strconv.ParseBool(hpods); hashPods {
+			hn, _ := os.Hostname()
+			h := fnv.New32a()
+			h.Write([]byte(hn))
+			hash := h.Sum32()
+			cfg.podsBaseAddr = fmt.Sprintf("%d.%d.%d.%d",
+				uint8(hash&0xFF),
+				uint8((hash>>8)&0xFF),
+				uint8((hash>>16)&0xFF),
+				uint8((hash>>24)&0xFF))
+		}
+	}
 	cfg.pods = defaultPods
 	if pstr, ok := os.LookupEnv("PODS"); ok {
 		var err error
 		cfg.pods, err = strconv.Atoi(pstr)
 		if err != nil {
 			log.Printf("wrong pods number: %s. Defaulting to %d", err, defaultPods)
-		}
-	}
-	cfg.nodes = defaultNodes
-	if pstr, ok := os.LookupEnv("NODES"); ok {
-		var err error
-		cfg.nodes, err = strconv.Atoi(pstr)
-		if err != nil {
-			log.Printf("wrong nodes number: %s. Defaulting to %d", err, defaultNodes)
 		}
 	}
 	cfg.flowsPerSecond = defaultFlowsPerSecond

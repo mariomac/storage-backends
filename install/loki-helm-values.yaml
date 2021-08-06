@@ -54,7 +54,7 @@ ingester:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
             matchExpressions:
-              - {key: "app.kubernetes.io/component", operator: In, values: ["distributor","querier"]}
+              - {key: "app.kubernetes.io/component", operator: In, values: ["ingester", "distributor","querier"]}
           topologyKey: kubernetes.io/hostname
   extraVolumes:
     - name: index
