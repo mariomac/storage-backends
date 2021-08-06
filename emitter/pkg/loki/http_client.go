@@ -69,7 +69,7 @@ func (c *HttpJsonClient) Push(payload PushPayload) error {
 	if resp.StatusCode/100 != 2 {
 		body, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("unexpected response %d (%s): %s",
-			resp.Status, resp.Status, string(body))
+			resp.StatusCode, resp.Status, string(body))
 	}
 	return nil
 }

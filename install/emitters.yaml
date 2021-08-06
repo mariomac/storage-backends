@@ -17,9 +17,9 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
-                  - key: "app.kubernetes.io/role"
+                  - key: "app.kubernetes.io/component"
                     operator: In
-                    values: [ "distributor","querier","query-frontend","ingester" ]
+                    values: [ "distributor","querier","ingester" ]
               topologyKey: kubernetes.io/hostname
       containers:
         - name: emitter
