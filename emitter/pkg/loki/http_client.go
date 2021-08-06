@@ -22,20 +22,6 @@ type HttpJsonClient struct {
 	hostPort string
 }
 
-type pushPayload struct {
-	Streams []stream `json:"streams"`
-}
-
-type stream struct {
-	Stream map[string]string `json:"stream"`
-	Values []LogEntry        `json:"values"`
-}
-
-type LogEntry struct {
-	EpochNs int64
-	Line    string
-}
-
 type responseBody struct {
 	Status string   `json:"status"`
 	Data   struct { // ignoring all the other fields
@@ -70,16 +56,12 @@ func NewHttpJsonClient(hostPort string) HttpJsonClient {
 	}
 }
 
-func (c *HttpJsonClient) Push(labels map[string]string, entries ...LogEntry) error {
-	pl := pushPayload{
-		Streams: []stream{{
-			Stream: labels,
-			Values: entries,
-		}},
+func (c *HttpJsonClient) Push(payload PushPayload) error {
+	jp, err := json.Marshal(payload)
+	if err != nil {
+		return err
 	}
-
-	payload, _ := json.Marshal(pl)
-	_, err := c.client.Post(c.hostPort+pathPush, contentPush, bytes.NewReader(payload))
+	_, err = c.client.Post(c.hostPort+pathPush, contentPush, bytes.NewReader(jp))
 	return err
 }
 

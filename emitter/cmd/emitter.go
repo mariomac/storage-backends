@@ -1,65 +1,90 @@
 package main
 
 import (
+	"github.com/mariomac/storage-backends/emitter/pkg/flow"
+	"github.com/mariomac/storage-backends/emitter/pkg/loki"
+	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/mariomac/storage-backends/emitter/pkg/flow"
-
-	"github.com/mariomac/storage-backends/emitter/pkg/loki"
 )
 
 const (
-	defaultPods  = 20
-	defaultNodes = 4
-	defaultLoki  = "http://localhost:3100"
+	defaultFlowsPerSecond = 2000
+	defaultPods           = 2
+	defaultNodes          = 4
+	defaultLoki           = "http://localhost:3100"
+	maxPayloadSize        = 1024 * 1024
 )
 
 func main() {
-	hostAddress, pods, nodes := parseConfig()
-	rndGen := flow.NewRndGenerator(pods, nodes)
-	cl := loki.NewHttpJsonClient(hostAddress)
-	start := time.Now()
+	cfg := parseConfig()
+	rndGen := flow.NewRndGenerator(cfg.pods, cfg.nodes)
+	accum := flow.NewAccumulator(&rndGen)
+	cl := loki.NewHttpJsonClient(cfg.hostAddress)
+	totalFlows := 0
 	messages := 0
+	start := time.Now()
+	rateLimiter := rate.NewLimiter(rate.Limit(cfg.flowsPerSecond), 1)
 	for {
-		err := cl.Push(map[string]string{"source": "fluentd"},
-			loki.LogEntry{
-				EpochNs: time.Now().UnixNano(),
-				Line:    rndGen.Rnd(),
-			})
-		if err != nil {
-			panic(err)
+		time.Sleep(rateLimiter.Reserve().Delay())
+		totalFlows++
+		if accum.Receive() < maxPayloadSize {
+			continue
 		}
+		pp := accum.Get()
+		go func() {
+			if err := cl.Push(pp); err != nil {
+				log.Print("ERROR sending data:", err)
+			}
+		}()
+		passedSeconds := time.Now().Sub(start).Seconds()
 		messages++
-		if messages%10_000 == 0 {
-			log.Printf("%4.1f seconds: %d messages",
-				time.Now().Sub(start).Seconds(), messages)
+		if messages%100 == 0 {
+			log.Printf("%4.1f seconds: %d messages %d flows",
+				passedSeconds, messages, totalFlows)
 		}
 	}
 }
 
-func parseConfig() (string, int, int) {
-	hostAddress, ok := os.LookupEnv("LOKI_HOST")
+type config struct {
+	hostAddress    string
+	pods           int
+	nodes          int
+	flowsPerSecond int
+}
+
+func parseConfig() config {
+	cfg := config{}
+	var ok bool
+	cfg.hostAddress, ok = os.LookupEnv("LOKI_HOST")
 	if !ok {
-		hostAddress = defaultLoki
+		cfg.hostAddress = defaultLoki
 	}
-	pods := defaultPods
+	cfg.pods = defaultPods
 	if pstr, ok := os.LookupEnv("PODS"); ok {
 		var err error
-		pods, err = strconv.Atoi(pstr)
+		cfg.pods, err = strconv.Atoi(pstr)
 		if err != nil {
 			log.Printf("wrong pods number: %s. Defaulting to %d", err, defaultPods)
 		}
 	}
-	nodes := defaultNodes
+	cfg.nodes = defaultNodes
 	if pstr, ok := os.LookupEnv("NODES"); ok {
 		var err error
-		nodes, err = strconv.Atoi(pstr)
+		cfg.nodes, err = strconv.Atoi(pstr)
 		if err != nil {
 			log.Printf("wrong nodes number: %s. Defaulting to %d", err, defaultNodes)
 		}
 	}
-	return hostAddress, pods, nodes
+	cfg.flowsPerSecond = defaultFlowsPerSecond
+	if fstr, ok := os.LookupEnv("FLOWS_PER_SECOND"); ok {
+		var err error
+		cfg.flowsPerSecond, err = strconv.Atoi(fstr)
+		if err != nil {
+			log.Printf("wrong flowsPerSecond: %s. Defaulting to %d", err, defaultFlowsPerSecond)
+		}
+	}
+	return cfg
 }

@@ -45,19 +45,20 @@ func NewRndGenerator(numPods, numNodes int) RndGenerator {
 	}
 }
 
-func (g *RndGenerator) Rnd() string {
+func (g *RndGenerator) Generate() (payload, srcPod, dstPod string) {
 	now := time.Now().Unix()
 	g.sequence++
 	srcNum := rand.Intn(len(g.podAddresses))
 	dstNum := rand.Intn(len(g.podAddresses))
-	srcPod := g.podAddresses[srcNum]
-	dstPod := g.podAddresses[dstNum]
-	return fmt.Sprintf(
+	srcPod = g.podAddresses[srcNum]
+	dstPod = g.podAddresses[dstNum]
+	payload = fmt.Sprintf(
 		flowTemplate, now, g.sequence, g.nodeAddresses[rand.Intn(len(g.nodeAddresses))],
 		now, now, rand.Intn(4095)+1, rand.Intn(63)+1, srcPod, dstPod,
 		rand.Intn(65000)+1, rand.Intn(65000)+1,
 		srcPod, g.nodeAddresses[srcNum%g.numNodes],
 		dstPod, g.nodeAddresses[dstNum%g.numNodes])
+	return payload, srcPod, dstPod
 }
 
 func ipRange(base string, length int) []string {
