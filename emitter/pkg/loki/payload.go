@@ -5,7 +5,7 @@ type PushPayload struct {
 }
 
 type Stream struct {
-	Stream map[string]string `json:"Stream"`
+	Stream map[string]string `json:"stream"`
 	Values []LogEntry        `json:"values"`
 }
 

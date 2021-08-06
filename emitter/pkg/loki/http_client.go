@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -61,8 +62,16 @@ func (c *HttpJsonClient) Push(payload PushPayload) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.client.Post(c.hostPort+pathPush, contentPush, bytes.NewReader(jp))
-	return err
+	resp, err := c.client.Post(c.hostPort+pathPush, contentPush, bytes.NewReader(jp))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode/100 != 2 {
+		body, _ := ioutil.ReadAll(resp.Body)
+		return fmt.Errorf("unexpected response %d (%s): %s",
+			resp.Status, resp.Status, string(body))
+	}
+	return nil
 }
 
 // just an incomplete test funciton

@@ -1,18 +1,19 @@
 package main
 
 import (
-	"github.com/mariomac/storage-backends/emitter/pkg/flow"
-	"github.com/mariomac/storage-backends/emitter/pkg/loki"
-	"golang.org/x/time/rate"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/mariomac/storage-backends/emitter/pkg/flow"
+	"github.com/mariomac/storage-backends/emitter/pkg/loki"
+	"golang.org/x/time/rate"
 )
 
 const (
 	defaultFlowsPerSecond = 2000
-	defaultPods           = 2
+	defaultPods           = 20
 	defaultNodes          = 4
 	defaultLoki           = "http://localhost:3100"
 	maxPayloadSize        = 1024 * 1024

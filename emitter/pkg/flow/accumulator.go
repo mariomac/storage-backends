@@ -1,8 +1,9 @@
 package flow
 
 import (
-	"github.com/mariomac/storage-backends/emitter/pkg/loki"
 	"time"
+
+	"github.com/mariomac/storage-backends/emitter/pkg/loki"
 )
 
 type index struct {
@@ -15,17 +16,17 @@ type generator interface {
 }
 
 type Accumulator struct {
-	generator generator
-	payloads map[index][]loki.LogEntry
-	clock func() time.Time
+	generator       generator
+	payloads        map[index][]loki.LogEntry
+	clock           func() time.Time
 	accumulatedSize int
 }
 
 func NewAccumulator(generator generator) Accumulator {
 	return Accumulator{
 		generator: generator,
-		payloads: map[index][]loki.LogEntry{},
-		clock: time.Now,
+		payloads:  map[index][]loki.LogEntry{},
+		clock:     time.Now,
 	}
 }
 
@@ -36,7 +37,7 @@ func (a *Accumulator) Receive() int {
 	payload, idx.srcPod, idx.dstPod = a.generator.Generate()
 	a.payloads[idx] = append(a.payloads[idx], loki.LogEntry{
 		EpochNs: a.clock().UnixNano(),
-		Line: payload,
+		Line:    payload,
 	})
 	a.accumulatedSize += len(payload)
 	return a.accumulatedSize
@@ -47,6 +48,7 @@ func (a *Accumulator) Get() loki.PushPayload {
 	for keys, lines := range a.getAndResetPayloads() {
 		pp.Streams = append(pp.Streams, loki.Stream{
 			Stream: map[string]string{
+				"source": "fluentd",
 				"srcPod": keys.srcPod,
 				"dstPod": keys.dstPod,
 			},

@@ -18,3 +18,10 @@ to locally build:
 ```
 docker build --tag=quay.io/mmaciasl/fake-flow-loki-emitter:latest . 
 ```
+
+CONFIG options
+
+* `LOKI_HOST` (default: `http://localhost:3100`)
+* `PODS` (default: `20`)
+* `NODES` (default: `4`)
+* `FLOWS_PER_SECOND` (default: `2000`)
