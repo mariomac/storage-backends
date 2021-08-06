@@ -1,0 +1,7 @@
+global:
+  openshift:
+    enabled: true
+server:
+  enabled: true
+client:
+  enabled: false

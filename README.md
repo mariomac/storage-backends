@@ -9,6 +9,7 @@ https://github.com/jotak/loki-sandbox
 2. Install loki
 
 ```
-helm install loki -f install/helm-values-override.yaml grafana/loki-distributed  --set access_key=... --set secret_access_key=... --set bucketname=...
+helm install consul -f install/consul-heml-values.yaml hashicorp/consul
+helm install loki -f install/loki-helm-values.yaml grafana/loki-distributed  --set access_key=... --set secret_access_key=... --set bucketname=...
 oc apply -f install/emitters.yaml
 ```

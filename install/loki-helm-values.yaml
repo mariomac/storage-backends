@@ -8,27 +8,20 @@ loki:
     distributor:
       ring:
         kvstore:
-          store: memberlist
+          store: consul
+          consul:
+            host: consul-consul-server:8500
 
     ingester:
       lifecycler:
         ring:
           kvstore:
-            store: memberlist
-          replication_factor: 1
+            store: consul
+            consul:
+              host: consul-consul-server:8500
         final_sleep: 0s
       chunk_idle_period: 5m
       chunk_retain_period: 30s
-    memberlist:
-      abort_if_cluster_join_fails: false
-
-      # Expose this port on all distributor, ingester
-      # and querier replicas.
-      bind_port: 7946
-
-      max_join_backoff: 1m
-      max_join_retries: 10
-      min_join_backoff: 1s
 
     schema_config:
       configs:
