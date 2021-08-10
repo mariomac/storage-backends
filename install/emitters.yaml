@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   name: emitter
 spec:
-  replicas: 4
+  replicas: 1
   selector:
     matchLabels:
       name: emitter
@@ -19,7 +19,7 @@ spec:
                 matchExpressions:
                   - key: "app.kubernetes.io/component"
                     operator: In
-                    values: [ "distributor","querier","ingester" ]
+                    values: [ "distributor","ingester" ]
               topologyKey: kubernetes.io/hostname
       containers:
         - name: emitter
@@ -31,7 +31,7 @@ spec:
             - name: HASH_PODS_BASE
               value: 'true'
             - name: FLOWS_PER_SECOND
-              value: '20000'
+              value: '2000'
 
 
 

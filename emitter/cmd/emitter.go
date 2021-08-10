@@ -30,6 +30,8 @@ func main() {
 	totalFlows := 0
 	messages := 0
 	start := time.Now()
+	lastReport := start
+	lastReportFlows := 0
 	rateLimiter := rate.NewLimiter(rate.Limit(cfg.flowsPerSecond), 1)
 	for {
 		time.Sleep(rateLimiter.Reserve().Delay())
@@ -46,8 +48,12 @@ func main() {
 		passedSeconds := time.Now().Sub(start).Seconds()
 		messages++
 		if messages%100 == 0 {
-			log.Printf("%4.1f seconds: %d messages %d flows",
-				passedSeconds, messages, totalFlows)
+			now := time.Now()
+			flowsSecond := float64(totalFlows-lastReportFlows) / now.Sub(lastReport).Seconds()
+			lastReport = now
+			lastReportFlows = totalFlows
+			log.Printf("%.1f seconds: %d messages %d flows (%.0f flows/second)",
+				passedSeconds, messages, totalFlows, flowsSecond)
 		}
 	}
 }

@@ -47,16 +47,16 @@ loki:
       enforce_metric_name: false
       reject_old_samples: true
       reject_old_samples_max_age: 168h
-      ingestion_rate_mb: 16
+      ingestion_rate_mb: 64
 
 ingester:
-  replicas: 2
+  replicas: 4
   affinity: |
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
         - labelSelector:
             matchExpressions:
-              - {key: "app.kubernetes.io/component", operator: In, values: ["ingester", "distributor","querier"]}
+              - {key: "app.kubernetes.io/component", operator: In, values: ["ingester", "distributor"]}
           topologyKey: kubernetes.io/hostname
   extraVolumes:
     - name: index
@@ -64,20 +64,8 @@ ingester:
   extraVolumeMounts:
     - name: index
       mountPath: /loki/index
-
 distributor:
-  affinity: |
-    podAntiAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        - labelSelector:
-            matchExpressions:
-              - {key: "app.kubernetes.io/component", operator: In, values: ["ingester","querier"]}
-          topologyKey: kubernetes.io/hostname
-gateway:
-  enabled: false
-querier:
-  serviceLabels:
-    testRole: querier
+  replicas: 2
   affinity: |
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -85,6 +73,11 @@ querier:
             matchExpressions:
               - {key: "app.kubernetes.io/component", operator: In, values: ["ingester","distributor"]}
           topologyKey: kubernetes.io/hostname
+gateway:
+  enabled: false
+querier:
+  serviceLabels:
+    testRole: querier
   extraVolumes:
     - name: index
       emptyDir: {}
