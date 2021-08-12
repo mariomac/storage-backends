@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   name: emitter
 spec:
-  replicas: 1
+  replicas: 6
   selector:
     matchLabels:
       name: emitter
@@ -27,11 +27,12 @@ spec:
           imagePullPolicy: Always
           env:
             - name: LOKI_HOST
-              value: http://loki-loki-distributed-distributor:3100
+              value: http://loki:3100
+              #value: http://loki-loki-distributed-distributor:3100
             - name: HASH_PODS_BASE
               value: 'true'
             - name: FLOWS_PER_SECOND
-              value: '2000'
+              value: '20000'
 
 
 
