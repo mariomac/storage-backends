@@ -18,6 +18,7 @@ const (
 	defaultPods           = 20
 	defaultLoki           = "http://localhost:3100"
 	defaultPodsBaseAddr   = "172.10.6.0"
+	defaultConcurrent     = true
 	maxPayloadSize        = 1024 * 1024
 )
 
@@ -40,11 +41,16 @@ func main() {
 			continue
 		}
 		pp := accum.Get()
-		go func() {
+		sendData := func() {
 			if err := cl.Push(pp); err != nil {
 				log.Print("ERROR sending data:", err)
 			}
-		}()
+		}
+		if cfg.concurrent {
+			go sendData()
+		} else {
+			sendData()
+		}
 		passedSeconds := time.Now().Sub(start).Seconds()
 		messages++
 		if messages%100 == 0 {
@@ -63,6 +69,7 @@ type config struct {
 	podsBaseAddr   string
 	pods           int
 	flowsPerSecond int
+	concurrent     bool
 }
 
 func parseConfig() config {
@@ -89,18 +96,26 @@ func parseConfig() config {
 	}
 	cfg.pods = defaultPods
 	if pstr, ok := os.LookupEnv("PODS"); ok {
-		var err error
-		cfg.pods, err = strconv.Atoi(pstr)
-		if err != nil {
+		if pods, err := strconv.Atoi(pstr); err != nil {
 			log.Printf("wrong pods number: %s. Defaulting to %d", err, defaultPods)
+		} else {
+			cfg.pods = pods
 		}
 	}
 	cfg.flowsPerSecond = defaultFlowsPerSecond
 	if fstr, ok := os.LookupEnv("FLOWS_PER_SECOND"); ok {
-		var err error
-		cfg.flowsPerSecond, err = strconv.Atoi(fstr)
-		if err != nil {
+		if flowsPerSecond, err := strconv.Atoi(fstr); err != nil {
 			log.Printf("wrong flowsPerSecond: %s. Defaulting to %d", err, defaultFlowsPerSecond)
+		} else {
+			cfg.flowsPerSecond = flowsPerSecond
+		}
+	}
+	cfg.concurrent = defaultConcurrent
+	if csrtr, ok := os.LookupEnv("CONCURRENT"); ok {
+		if concurrent, err := strconv.ParseBool(csrtr); err != nil {
+			log.Printf("wrong concurrent: %s. Defaulting to %v", err, defaultConcurrent)
+		} else {
+			cfg.concurrent = concurrent
 		}
 	}
 	return cfg

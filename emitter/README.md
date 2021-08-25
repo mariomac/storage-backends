@@ -25,3 +25,4 @@ CONFIG options
 * `PODS` (default: `20`)
 * `HASH_PODS_BASE` whether has to generate a base pods address hashed from the hostname (default: `false`)
 * `FLOWS_PER_SECOND` (default: `2000`)
+* `CONCURRENT` whether flows must be pushed in background while generating others (default: `true`)

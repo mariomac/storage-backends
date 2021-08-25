@@ -74,7 +74,7 @@ func (c *HttpJsonClient) Push(payload PushPayload) error {
 	return nil
 }
 
-// just an incomplete test funciton
+// just an incomplete test function
 // TODO: return all result's entries
 // TODO: search by log content
 func (c *HttpJsonClient) QueryRange(windowLength time.Duration, labels map[string]string) ([]LogEntry, error) {

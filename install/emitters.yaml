@@ -3,7 +3,7 @@ apiVersion: apps/v1
 metadata:
   name: emitter
 spec:
-  replicas: 6
+  replicas: 64
   selector:
     matchLabels:
       name: emitter
@@ -17,9 +17,12 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchExpressions:
-                  - key: "app.kubernetes.io/component"
+#                  - key: "app.kubernetes.io/component"
+#                    operator: In
+#                    values: [ "distributor","ingester" ]
+                  - key: "app"
                     operator: In
-                    values: [ "distributor","ingester" ]
+                    values: [ "loki" ]
               topologyKey: kubernetes.io/hostname
       containers:
         - name: emitter
@@ -33,6 +36,10 @@ spec:
               value: 'true'
             - name: FLOWS_PER_SECOND
               value: '20000'
+            - name: CONCURRENT
+              value: 'false'
+            - name: PODS
+              value: '5'
 
 
 
