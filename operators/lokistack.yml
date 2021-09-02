@@ -1,0 +1,12 @@
+apiVersion: loki.openshift.io/v1beta1
+kind: LokiStack
+metadata:
+  name: lokistack-sample
+spec:
+  size: 1x.extra-small
+  replicationFactor: 1
+  storage:
+    secret:
+      name: s3-secrets
+  storageClassName: gp2
+
